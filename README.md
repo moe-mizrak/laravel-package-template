@@ -1,3 +1,8 @@
+# :package_name
+:package_description
+
+# 🚧 Under Construction 🚧
+<!--delete-->
 # Laravel Package Template
 My opinionated template for the Laravel packages
 
@@ -12,7 +17,7 @@ My opinionated template for the Laravel packages
 >   ```
 >   
 > 3. That's it! Now you have a new Laravel package scaffolded and ready to be developed.
-
+<!--/delete-->
 ## Installation
 You can install the package (that you created with this template) via composer:
   ```bash
@@ -21,7 +26,7 @@ You can install the package (that you created with this template) via composer:
 
 You can publish and run the migrations with:
   ```bash
-  php artisan vendor:publish --tag=":package_slug-config"
+  php artisan vendor:publish --tag=":package_slug"
   ```
 
 ## Contributing
@@ -31,7 +36,7 @@ You can publish and run the migrations with:
 > If you find this project useful, please consider ⭐ it to show your support!
 
 ## Authors
-This project is created and maintained by [Moe Mizrak](https://github.com/moe-mizrak) with contributions from the [Open Source Community](https://github.com/laplace-demon-ai/demon-dextral-horn/graphs/contributors).
+This project is created and maintained by [:author_name](https://github.com/:author_username).
 
 ## License
 Laravel Package Template is an open-sourced software licensed under the **[MIT license](LICENSE)**.

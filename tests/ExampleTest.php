@@ -7,7 +7,7 @@ namespace VendorName\Skeleton\Tests;
 use VendorName\Skeleton\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
-class ExampleTest extends TestCase
+final class ExampleTest extends TestCase
 {
     public function setUp(): void
     {
