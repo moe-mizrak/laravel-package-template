@@ -1,13 +1,15 @@
 #!/usr/bin/env php
 <?php
 
+declare(strict_types=1);
+
 /**
  * Ask the user a question and get the answer.
  * If the user provides no answer, return the default value.
  */
 function ask(string $question, string $default = ''): string
 {
-    $answer = readline($question.($default ? " ({$default})" : null).': ');
+    $answer = readline('-> '.$question.($default ? " ({$default})" : null).': ');
 
     if (! $answer) {
         return $default;
@@ -48,21 +50,6 @@ function run(string $command): string
 }
 
 /**
- * Gets the substring after the last occurrence of $search in $subject.
- * If the search string is not found, returns the original string.
- */
-function str_after(string $subject, string $search): string
-{
-    $pos = strrpos($subject, $search);
-
-    if ($pos === false) {
-        return $subject;
-    }
-
-    return substr($subject, $pos + strlen($search));
-}
-
-/**
  * Converts a string into a slug by replacing non-alphanumeric characters with hyphens.
  */
 function slugify(string $subject): string
@@ -73,7 +60,7 @@ function slugify(string $subject): string
 /**
  * Converts a string (potentially with hyphens or underscores) into PascalCase (e.g., my-package becomes MyPackage).
  */
-function title_case(string $subject): string
+function titleCase(string $subject): string
 {
     return str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $subject)));
 }
@@ -82,7 +69,7 @@ function title_case(string $subject): string
  * Reads the content of a file, performs multiple string replacements using the provided associative array,
  * and writes the modified content back to the file.
  */
-function replace_in_file(string $file, array $replacements): void
+function replaceInFile(string $file, array $replacements): void
 {
     $contents = file_get_contents($file);
 
@@ -99,7 +86,7 @@ function replace_in_file(string $file, array $replacements): void
 /**
  * Removes content within the file.
  */
-function remove_readme_paragraphs(string $file): void
+function removeReadmeParagraphs(string $file): void
 {
     $contents = file_get_contents($file);
 
@@ -119,10 +106,10 @@ function determineSeparator(string $path): string
 }
 
 /**
- * Searches for files containing specific placeholder strings and returns an array of file paths
- * that need to be updated for all operating systems.
+ * Searches for files containing specific placeholder strings and returns an array of their paths.
+ * Excludes the 'vendor' directory and the current script file from the search.
  */
-function replaceForAllOtherOSes(): array
+function replacePlaceholders(): array
 {
     return explode(PHP_EOL, run('grep -E -r -l -i ":author|:vendor|:package|VendorName|skeleton|vendor_name|vendor_slug" --exclude-dir=vendor ./* ./.github/* | grep -v '.basename(__FILE__)));
 }
@@ -152,9 +139,7 @@ function getGitHubApiEndpoint(string $endpoint): ?stdClass
         if ($statusCode === 200) {
             return json_decode($response);
         }
-    } catch (Exception $e) {
-        // ignore
-    }
+    } catch (Exception $e) {}
 
     return null;
 }
@@ -164,18 +149,18 @@ function getGitHubApiEndpoint(string $endpoint): ?stdClass
  */
 function searchCommitsForGitHubUsername(): string
 {
-    $authorName = strtolower(trim(shell_exec('git config user.name')));
+    $authorUserName = strtolower(trim(shell_exec('git config user.name')));
 
     $committersRaw = shell_exec("git log --author='@users.noreply.github.com' --pretty='%an:%ae' --reverse");
     $committersLines = explode("\n", $committersRaw ?? '');
-    $committers = array_filter(array_map(function ($line) use ($authorName) {
+    $committers = array_filter(array_map(function ($line) use ($authorUserName) {
         $line = trim($line);
         [$name, $email] = explode(':', $line) + [null, null];
 
         return [
             'name' => $name,
             'email' => $email,
-            'isMatch' => strtolower($name) === $authorName && ! str_contains($name, '[bot]'),
+            'isMatch' => strtolower($name) === $authorUserName && ! str_contains($name, '[bot]'),
         ];
     }, $committersLines), fn ($item) => $item['isMatch']);
 
@@ -194,12 +179,10 @@ function searchCommitsForGitHubUsername(): string
 function guessGitHubUsernameUsingCli()
 {
     try {
-        if (preg_match('/ogged in to github\.com as ([a-zA-Z-_]+).+/', shell_exec('gh auth status -h github.com 2>&1'), $matches)) {
+        if (preg_match('/logged in to github\.com as ([a-zA-Z-_]+).+/', shell_exec('gh auth status -h github.com 2>&1'), $matches)) {
             return $matches[1];
         }
-    } catch (Exception $e) {
-        // ignore
-    }
+    } catch (Exception $e) {}
 
     return '';
 }
@@ -211,11 +194,13 @@ function guessGitHubUsernameUsingCli()
 function guessGitHubUsername(): string
 {
     $username = searchCommitsForGitHubUsername();
+
     if (! empty($username)) {
         return $username;
     }
 
     $username = guessGitHubUsernameUsingCli();
+
     if (! empty($username)) {
         return $username;
     }
@@ -253,15 +238,15 @@ function guessGitHubVendorInfo($authorName, $username): array
 $gitName = run('git config user.name');
 
 // Ask and get the author name and username
-$authorName = ask('Author name', $gitName);
-$authorUsername = ask('Author username', guessGitHubUsername());
+$authorUsername = ask('Author username', $gitName);
+$authorName = ask('Author name', guessGitHubUsername());
 
 // Get vendor related info including name, username and namespace etc.
 $guessGitHubVendorInfo = guessGitHubVendorInfo($authorName, $authorUsername);
 $vendorName = ask('Vendor name', $guessGitHubVendorInfo[0]);
 $vendorUsername = ask('Vendor username', $guessGitHubVendorInfo[1] ?? slugify($vendorName));
 $vendorSlug = slugify($vendorUsername);
-$vendorNamespace = str_replace('-', '', ucwords($vendorName));
+$vendorNamespace = str_replace(' ', '', ucwords(str_replace('-', ' ', $vendorName)));
 $vendorNamespace = ask('Vendor namespace', $vendorNamespace);
 
 // Get the current dir and folder name
@@ -273,31 +258,31 @@ $packageName = ask('Package name', $folderName);
 $packageSlug = slugify($packageName);
 
 // Ask and get the class name, variable name and description
-$className = title_case($packageName);
+$className = titleCase($packageName);
 $className = ask('Class name', $className);
 $variableName = lcfirst($className);
 $description = ask('Package description', "This is my package {$packageSlug}");
 
 // Display summary before proceeding
-writeln('------');
-writeln("Author     : {$authorName} ({$authorUsername}})");
-writeln("Vendor     : {$vendorName} ({$vendorSlug})");
+writeln('----------------------');
+writeln("Author     : {$authorUsername} ({$authorName})");
+writeln("Vendor     : {$vendorSlug} ({$vendorName})");
 writeln("Package    : {$packageSlug} <{$description}>");
 writeln("Namespace  : {$vendorNamespace}\\{$className}");
 writeln("Class name : {$className}");
-writeln('------');
+writeln('----------------------');
 
-writeln('This script will replace the above values in all relevant files in the project directory.');
+writeln('This script will update all relevant files in the project.');
 
 if (! confirm('Modify files?', true)) {
     exit(1);
 }
 
-$files = replaceForAllOtherOSes();
+$files = replacePlaceholders();
 
 // File replacements and renames
 foreach ($files as $file) {
-    replace_in_file($file, [
+    replaceInFile($file, [
         ':author_name' => $authorName,
         ':author_username' => $authorUsername,
         ':vendor_name' => $vendorName,
@@ -316,7 +301,7 @@ foreach ($files as $file) {
         str_contains($file, determineSeparator('src/SkeletonServiceProvider.php')) => rename($file, determineSeparator('./src/'.$className.'ServiceProvider.php')),
         str_contains($file, determineSeparator('src/Facades/Skeleton.php')) => rename($file, determineSeparator('./src/Facades/'.$className.'.php')),
         str_contains($file, determineSeparator('config/skeleton.php')) => rename($file, determineSeparator('./config/'.$packageSlug.'.php')),
-        str_contains($file, 'README.md') => remove_readme_paragraphs($file),
+        str_contains($file, 'README.md') => removeReadmeParagraphs($file),
         default => [],
     };
 }
