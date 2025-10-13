@@ -19,12 +19,12 @@ My opinionated template for the Laravel packages
 > 3. That's it! Now you have a new Laravel package scaffolded and ready to be developed.
 <!--/delete-->
 ## Installation
-You can install the package (that you created with this template) via composer:
+You can install the package via composer:
   ```bash
   composer require :vendor_slug/:package_slug
   ```
 
-You can publish and run the migrations with:
+You can publish the config file with:
   ```bash
   php artisan vendor:publish --tag=":package_slug"
   ```
